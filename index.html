@@ -214,7 +214,7 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
   <div class="logo"><img src="images/logo.png" alt="Logo"></div>
   <nav class="tabs">
     <button class="tab-btn active" data-tab="inventory">Inventario</button>
-    <button class="tab-btn" data-tab="sales">En producción</button>
+    <button class="tab-btn" data-tab="sales">Destinado a Ventas</button>
     <button class="tab-btn" data-tab="analysis" id="tabAnalysisBtn">Análisis</button>
     <button class="tab-btn" data-tab="sold">Agotados</button>
     <!-- <button class="tab-btn" data-tab="clients">Clientes</button> -->
@@ -241,7 +241,7 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
         <thead>
         <tr>
           <th><input type="checkbox" id="selectAllProducts"></th>
-          <th>Producto</th><th>Disponibles</th><th>Retirados</th><th>Acciones</th>
+          <th>Producto</th><th>Disponibles</th><th>Para Ventas</th><th>Acciones</th>
         </tr>
         </thead>
         <tbody></tbody>
@@ -252,7 +252,7 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
   <!-- SECCIÓN VENTAS -->
   <section id="sales" class="tab-content hidden">
     <div class="page-header">
-      <h1>Vikingos Retirados</h1>
+      <h1>Vikingos para venta</h1>
       <div>
         <button class="btn ghost" id="deleteSelectedSales">Eliminar Seleccionados</button>
         <button class="btn danger" id="deleteAllSales">Eliminar Todos</button>
@@ -374,6 +374,4 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
 </script>
 
 </body>
-
 </html>
-
