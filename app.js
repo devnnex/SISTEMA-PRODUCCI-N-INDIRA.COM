@@ -198,7 +198,7 @@ function ensureUiExtras() {
 
             <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
               <button type="button" id="cancelSell" class="btn ghost">Cancelar</button>
-              <button type="submit" class="btn primary">Confirmar Venta</button>
+              <button type="submit" class="btn primary">Confirmar Retiro</button>
             </div>
           </form>
         </div>
@@ -1642,4 +1642,5 @@ $$('.tab-btn').forEach(btn => {
 // Render inicial
 if (document.querySelector('#clients') && !document.querySelector('#clients').classList.contains('hidden')) {
   refreshClientsUI();
+
 }
