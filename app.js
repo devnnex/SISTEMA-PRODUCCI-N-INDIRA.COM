@@ -308,7 +308,7 @@ function renderInventoryTable(filter = '') {
         <td>${p.qty}</td>
         <td style="color:#45d37a">${p.sold||0}</td>
         <td>
-          <button class="btn ghost sell-btn" data-id="${p.id}">Retirar</button>
+          <button class="btn ghost sell-btn" data-id="${p.id}">Salida</button>
           <button class="btn ghost edit-btn" data-id="${p.id}">Editar</button>
           <button class="btn ghost delete-btn" data-id="${p.id}">Eliminar</button>
         </td>
@@ -1644,3 +1644,4 @@ if (document.querySelector('#clients') && !document.querySelector('#clients').cl
   refreshClientsUI();
 
 }
+
