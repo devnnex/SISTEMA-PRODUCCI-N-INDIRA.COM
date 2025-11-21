@@ -394,6 +394,20 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <!-- ✅ SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>Swal.fire({
+  icon: 'success',
+  title: '¡Nueva actualizacion!',
+  html: `
+    <span style="font-size:15px;">
+      Seguimos trabajando cada dia para brindarte lo que hace falta, no te preocupes!.
+    </span>
+  `,
+  background: '#1e1e1e',
+  color: '#fff',
+  confirmButtonColor: '#4caf50',
+  confirmButtonText: 'OK'
+});
+</script>
 <script>
  
     emailjs.init("WG36JQzyb-sxnapxf"); // 👈 Reemplaza con tu Public Key de EmailJS
