@@ -1,6 +1,4 @@
-/* app.js - Dashboard Inventario & Ventas (completo) 
-   Compatible con el HTML que me pasaste.
-   Requiere Chart.js, html2canvas y jspdf (ya los tienes en el HTML).
+/* app.js - Dashboard Inventario & Ventas (completo) v2.3.0 2025-15-11 
 */
 
 const LS_PRODUCTS = 'inventory_products';
@@ -288,27 +286,28 @@ function renderInventoryTable(filter = '') {
   const tbody = $('#inventoryTable tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
+
   const q = (filter || '').trim().toLowerCase();
   const products = loadProducts();
 
-  // Only show products with qty > 0 in inventory
   products
     .filter(p => (p.qty || 0) > 0)
     .filter(p => {
       if (!q) return true;
-      return (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
+      return (p.name || '').toLowerCase().includes(q)
+        || (p.brand || '').toLowerCase().includes(q)
+        || (p.category || '').toLowerCase().includes(q);
     })
     .forEach(p => {
-      const price = Math.round((p.cost || 0) * (1 + (p.marginPercent || 0)/100));
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input class="row-select" data-id="${p.id}" type="checkbox"></td>
         <td>${esc(p.name)}</td>
- 
         <td>${p.qty}</td>
-        <td style="color:#45d37a">${p.sold||0}</td>
+        <td style="color:#45d37a">${p.sold || 0}</td>
         <td>
           <button class="btn ghost sell-btn" data-id="${p.id}">Salida</button>
+          <button class="btn ghost add-stock-btn" data-id="${p.id}">Añadir</button>
           <button class="btn ghost edit-btn" data-id="${p.id}">Editar</button>
           <button class="btn ghost delete-btn" data-id="${p.id}">Eliminar</button>
         </td>
@@ -318,6 +317,55 @@ function renderInventoryTable(filter = '') {
 
   updateSelectedCount();
 }
+
+// ================================MODAL PARA AGREGAR UNIDADES AL STOCK EXISTENTE============
+
+let addStockProductId = null;
+
+// ABRIR MODAL
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('add-stock-btn')) {
+    addStockProductId = e.target.dataset.id;
+
+    $('#addStockOverlay').style.display = 'flex';
+    $('#addStockOverlay').classList.remove('hidden');
+
+    $('#addStockInput').value = '';
+    $('#addStockInput').focus();
+  }
+});
+
+// CERRAR MODAL
+$('#closeAddStockModal').onclick = () => {
+  $('#addStockOverlay').classList.add('hidden');
+  setTimeout(() => $('#addStockOverlay').style.display = 'none', 200);
+};
+
+// CONFIRMAR AÑADIR STOCK
+$('#confirmAddStockBtn').onclick = () => {
+  const qtyToAdd = parseInt($('#addStockInput').value);
+
+  if (!qtyToAdd || qtyToAdd <= 0) {
+    alert("Ingrese una cantidad válida.");
+    return;
+  }
+
+  let products = loadProducts();
+  let p = products.find(x => x.id === addStockProductId);
+  if (!p) return;
+
+  p.qty = (p.qty || 0) + qtyToAdd;
+
+  saveProducts(products);
+  renderInventoryTable();
+
+  $('#addStockOverlay').classList.add('hidden');
+  setTimeout(() => $('#addStockOverlay').style.display = 'none', 200);
+};
+
+//==========================FIN DEL MODAL DE AGREGAR STOCK O DEL BOTON AÑADIR================
+
+
 
 // Formatear fecha en estilo "Dom, ene 1, 2023 | 3:45 PM PARA LA TABLA EN PRODUCCION "
 function formatPrettyDate(isoString) {
@@ -1642,6 +1690,4 @@ $$('.tab-btn').forEach(btn => {
 // Render inicial
 if (document.querySelector('#clients') && !document.querySelector('#clients').classList.contains('hidden')) {
   refreshClientsUI();
-
 }
-
