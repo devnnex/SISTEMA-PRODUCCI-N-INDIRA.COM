@@ -282,6 +282,7 @@ function show(selector) { const el = document.querySelector(selector); if (el) e
 function hide(selector) { const el = document.querySelector(selector); if (el) el.classList.add('hidden'); }
 
 /* ---------- Inventory rendering ---------- */
+/* ---------- Inventory rendering ---------- */
 function renderInventoryTable(filter = '') {
   const tbody = $('#inventoryTable tbody');
   if (!tbody) return;
@@ -291,7 +292,7 @@ function renderInventoryTable(filter = '') {
   const products = loadProducts();
 
   products
-    .filter(p => (p.qty || 0) > 0)
+    // YA NO filtramos qty > 0 → ahora se muestran TODOS
     .filter(p => {
       if (!q) return true;
       return (p.name || '').toLowerCase().includes(q)
@@ -299,14 +300,22 @@ function renderInventoryTable(filter = '') {
         || (p.category || '').toLowerCase().includes(q);
     })
     .forEach(p => {
+      const isZero = (p.qty || 0) <= 0;
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input class="row-select" data-id="${p.id}" type="checkbox"></td>
+
         <td>${esc(p.name)}</td>
-        <td>${p.qty}</td>
+
+        <td ${isZero ? 'style="color:#ff5555;font-weight:bold;"' : ''}>
+          ${isZero ? 'AGOTADO' : p.qty}
+        </td>
+
         <td style="color:#45d37a">${p.sold || 0}</td>
+
         <td>
-          <button class="btn ghost sell-btn" data-id="${p.id}">Salida</button>
+          <button class="btn ghost sell-btn" data-id="${p.id}" ${isZero ? 'disabled' : ''}>Salida</button>
           <button class="btn ghost add-stock-btn" data-id="${p.id}">Añadir</button>
           <button class="btn ghost edit-btn" data-id="${p.id}">Editar</button>
           <button class="btn ghost delete-btn" data-id="${p.id}">Eliminar</button>
@@ -1691,3 +1700,4 @@ $$('.tab-btn').forEach(btn => {
 if (document.querySelector('#clients') && !document.querySelector('#clients').classList.contains('hidden')) {
   refreshClientsUI();
 }
+
