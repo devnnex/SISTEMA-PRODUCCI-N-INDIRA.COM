@@ -63,7 +63,7 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
   box-shadow: 0 4px 6px var(--shadow);
   flex-wrap: wrap;
 }
-.topbar .logo img { height:40px; box-shadow: #fff;}
+.topbar .logo img { height:40px; box-shadow: #fff; align-items: center;}
 .topbar .tabs { display:flex; flex-wrap:wrap; gap:10px; }
 .tab-btn { padding:8px 15px; border:none; background:none; color:var(--text-light); cursor:pointer; border-radius:6px; transition:.2s; }
 .tab-btn.active {background: #25b99d;color:#000000;}
@@ -72,6 +72,11 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
 .card {background: #24c4a3;border-radius:12px;padding:15px;box-shadow: 0 4px 8px var(--shadow);overflow:auto;}
 .table-card table { width:100%; border-collapse: collapse; }
 .table-card th, .table-card td {padding:10px;text-align:left;border-bottom:1px solid #333;font-weight: 700;}
+
+#inventoryTable td:nth-child(2) {
+  color: #000000 !important; /* verde menta */
+  font-weight: bold; /* opcional */
+}
 
 #inventoryTable td:nth-child(3) {
   color: #ff0000 !important; /* verde menta */
@@ -221,21 +226,79 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
 }
 
 
+
+
 </style>
 </head>
 <body>
-<header class="topbar">
-  <div class="logo"><img src="images/logo.png" alt="Logo"></div>
+
+ <header class="topbar">
+
+  <style>
+    /* === Estilos solo para las secciones izquierdas === */
+    .left-sections {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-right: 20px;
+    }
+
+    .left-sections button {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 15px;
+      padding: 6px 10px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: 0.2s;
+    }
+
+    .left-sections button:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 10px 15px;
+      gap: 20px;
+    }
+
+    .logo img {
+      height: 42px;
+    }
+
+    .tabs {
+      margin-left: auto; /* Empuja las tabs hacia la derecha */
+      display: flex;
+      gap: 8px;
+    }
+  </style>
+
+  <!-- SECCIONES A LA IZQUIERDA -->
+  <div class="left-sections">
+    <button class="tab-btn" data-section="bucaramanga">Bucaramanga</button>
+    <button class="tab-btn" data-section="barranca">Barranca</button>
+    <button class="tab-btn" data-section="stickers">Stickers</button>
+  </div>
+
+  <!-- LOGO -->
+  <div class="logo">
+    <img src="images/logo.png" alt="Logo">
+  </div>
+
+  <!-- TABS -->
   <nav class="tabs">
     <button class="tab-btn active" data-tab="inventory">Inventario</button>
     <button class="tab-btn" data-tab="sales">Movimientos</button>
     <button class="tab-btn" data-tab="analysis" id="tabAnalysisBtn">Análisis</button>
-    <!-- <button class="tab-btn" data-tab="sold">Agotados</button>  -->
-    <!-- <button class="tab-btn" data-tab="clients">Clientes</button> -->
-
+    <button class="tab-btn" data-tab="sold">Agotados</button>
   </nav>
-  <!-- <div><button class="btn ghost" id="logoutBtn">Cerrar Sesión</button></div> -->
+
 </header>
+
 
 <main class="container">
   <!-- INVENTARIO -->
@@ -313,6 +376,98 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
     </div>
   </section>
 
+  <!-- ========== SECCIONES NUEVAS PARA CIUDADES Y STICKERS ========== -->
+<!-- ========== Bucaramanga ========== -->
+<section id="section-bucaramanga" class="tab-content hidden">
+  <div class="page-header">
+    <h1>Bucaramanga</h1>
+    <div>
+      <button class="btn primary" id="addBgaBtn">+ Agregar Producto</button>
+      <button class="btn ghost" id="deleteSelectedBgaBtn">Eliminar Seleccionados (0)</button>
+      <button class="btn ghost" id="downloadBgaPdfBtn">Exportar PDF</button>
+      <button class="btn ghost" id="exportBgaExcel">Exportar Excel</button>
+    </div>
+  </div>
+
+  <input id="searchBga" placeholder="Buscar producto..." style="padding:8px; border-radius:6px; width:100%; margin-bottom:10px;">
+
+  <div class="card table-card" id="bgaTableWrapper">
+    <table id="tableBucaramanga">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAllBga"></th>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Costo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========== Barranca ========== -->
+<section id="section-barranca" class="tab-content hidden">
+  <div class="page-header">
+    <h1>Barranca</h1>
+    <div>
+      <button class="btn primary" id="addBarrancaBtn">+ Agregar Producto</button>
+      <button class="btn ghost" id="deleteSelectedBarrancaBtn">Eliminar Seleccionados (0)</button>
+      <button class="btn ghost" id="downloadBarrancaPdfBtn">Exportar PDF</button>
+      <button class="btn ghost" id="exportBarrancaExcel">Exportar Excel</button>
+    </div>
+  </div>
+
+  <input id="searchBarranca" placeholder="Buscar producto..." style="padding:8px; border-radius:6px; width:100%; margin-bottom:10px;">
+
+  <div class="card table-card" id="barrancaTableWrapper">
+    <table id="tableBarranca">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAllBarranca"></th>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Costo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========== Stickers ========== -->
+<section id="section-stickers" class="tab-content hidden">
+  <div class="page-header">
+    <h1>Stickers</h1>
+    <div>
+      <button class="btn primary" id="addStickerBtn">+ Agregar Sticker</button>
+      <button class="btn ghost" id="deleteSelectedStickersBtn">Eliminar Seleccionados (0)</button>
+      <button class="btn ghost" id="downloadStickersPdfBtn">Exportar PDF</button>
+      <button class="btn ghost" id="exportStickersExcel">Exportar Excel</button>
+    </div>
+  </div>
+
+  <input id="searchStickers" placeholder="Buscar sticker..." style="padding:8px; border-radius:6px; width:100%; margin-bottom:10px;">
+
+  <div class="card table-card" id="stickersTableWrapper">
+    <table id="tableStickers">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAllStickers"></th>
+          <th>Sticker</th>
+          <th>Cantidad</th>
+          <th>Precio</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+
   <!-- CLIENTES -->
 <!-- 
   <section id="clients" class="tab-content hidden">
@@ -387,19 +542,19 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
 
 
 
-
 <footer style="text-align:center; padding:10px; color:#aaa;">© 2025 Vikingos Indira Group</footer>
+
 
 <script src="app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <!-- ✅ SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>Swal.fire({
-  icon: 'warning',
+  icon: 'success',
   title: '¡Nueva actualizacion!',
   html: `
     <span style="font-size:15px;">
-    YA NO LOS MUEVE, LOS DEJA Y LOS NOMBRA COMO AGOTADOS EN LA MISMA TABLA. Trabajamos cada dia para brindarte lo que hace falta, no te preocupes! FELIZ DIA.
+      Ya puedes dar click salida Y colocar manualmente 0 Cuando diga agotado y no quieras ver mas la suma de los que fueron saliendo!.
     </span>
   `,
   background: '#1e1e1e',
@@ -416,5 +571,3 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
 
 </body>
 </html>
-
-
