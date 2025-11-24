@@ -282,7 +282,6 @@ function show(selector) { const el = document.querySelector(selector); if (el) e
 function hide(selector) { const el = document.querySelector(selector); if (el) el.classList.add('hidden'); }
 
 /* ---------- Inventory rendering ---------- */
-/* ---------- Inventory rendering ---------- */
 function renderInventoryTable(filter = '') {
   const tbody = $('#inventoryTable tbody');
   if (!tbody) return;
@@ -292,7 +291,6 @@ function renderInventoryTable(filter = '') {
   const products = loadProducts();
 
   products
-    // YA NO filtramos qty > 0 → ahora se muestran TODOS
     .filter(p => {
       if (!q) return true;
       return (p.name || '').toLowerCase().includes(q)
@@ -312,7 +310,17 @@ function renderInventoryTable(filter = '') {
           ${isZero ? 'AGOTADO' : p.qty}
         </td>
 
-        <td style="color:#45d37a">${p.sold || 0}</td>
+        <!-- Editable sold column -->
+        <td>
+          <input 
+            type="number" 
+            class="sold-edit" 
+            data-id="${p.id}" 
+            value="${p.sold || 0}" 
+            min="0"
+            style="width:70px; padding:4px; border-radius:6px; text-align:center;"
+          >
+        </td>
 
         <td>
           <button class="btn ghost sell-btn" data-id="${p.id}" ${isZero ? 'disabled' : ''}>Salida</button>
@@ -321,11 +329,38 @@ function renderInventoryTable(filter = '') {
           <button class="btn ghost delete-btn" data-id="${p.id}">Eliminar</button>
         </td>
       `;
+
       tbody.appendChild(tr);
     });
 
   updateSelectedCount();
+
+  // ===============================
+  // GUARDAR CAMBIOS MANUALES DE SOLD
+  // ===============================
+  $$('.sold-edit').forEach(input => {
+    input.addEventListener("change", e => {
+      const id = e.target.dataset.id;
+      let newValue = parseInt(e.target.value);
+
+      if (isNaN(newValue) || newValue < 0) {
+        alert("Valor inválido");
+        renderInventoryTable();
+        return;
+      }
+
+      const products = loadProducts();
+      const p = products.find(x => x.id === id);
+      if (!p) return;
+
+      p.sold = newValue; // ← Guardamos manualmente, incluyendo 0
+
+      saveProducts(products);
+    });
+  });
 }
+
+
 
 // ================================MODAL PARA AGREGAR UNIDADES AL STOCK EXISTENTE============
 
@@ -453,6 +488,8 @@ function renderSoldTable() {
     });
   });
 }
+
+
 
 
 // ---------- Eliminar todos los productos vendidos ----------
@@ -1700,4 +1737,6 @@ $$('.tab-btn').forEach(btn => {
 if (document.querySelector('#clients') && !document.querySelector('#clients').classList.contains('hidden')) {
   refreshClientsUI();
 }
+
+
 
