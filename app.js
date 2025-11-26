@@ -282,9 +282,53 @@ function show(selector) { const el = document.querySelector(selector); if (el) e
 function hide(selector) { const el = document.querySelector(selector); if (el) el.classList.add('hidden'); }
 
 /* ---------- Inventory rendering ---------- */
-function renderInventoryTable(filter = '') {
+function renderInventoryTable(filter = '', stockFilter = 'all') {
   const tbody = $('#inventoryTable tbody');
   if (!tbody) return;
+
+  // ====== INSERTAR FILTRO SI NO EXISTE ======
+  let filterContainer = document.getElementById('stock-filter-container');
+  if (!filterContainer) {
+    filterContainer = document.createElement('div');
+    filterContainer.id = 'stock-filter-container';
+    filterContainer.style = `
+      margin-bottom: 12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      background: #24c4a3;         /* Rosado suave */
+      padding: 8px 12px;
+      border-radius: 8px;
+    `;
+
+    filterContainer.innerHTML = `
+      <label style="font-weight:600; color:#000;">Filtrar:</label>
+      <select id="stockFilter" 
+        style="
+          padding:6px 10px; 
+          border-radius:6px;
+          background:#ffb9d8;   /* Rosado */
+          border:1px solid #e898b9;
+          color:#000;           /* Letra negra */
+          font-weight:600;
+        ">
+        <option value="all">Todos</option>
+        <option value="agotados">Agotados</option>
+      </select>
+    `;
+
+    const table = document.getElementById('inventoryTable');
+    table.parentNode.insertBefore(filterContainer, table);
+
+    // Evento del filtro
+    document.getElementById('stockFilter').addEventListener('change', e => {
+      renderInventoryTable(filter, e.target.value);
+    });
+  }
+
+  // ==================================================
+  // LIMPIAR TABLA
+  // ==================================================
   tbody.innerHTML = '';
 
   const q = (filter || '').trim().toLowerCase();
@@ -292,10 +336,21 @@ function renderInventoryTable(filter = '') {
 
   products
     .filter(p => {
-      if (!q) return true;
-      return (p.name || '').toLowerCase().includes(q)
-        || (p.brand || '').toLowerCase().includes(q)
-        || (p.category || '').toLowerCase().includes(q);
+      // FILTRO DE TEXTO (YA EXISTENTE)
+      const matchesText =
+        !q ||
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.brand || '').toLowerCase().includes(q) ||
+        (p.category || '').toLowerCase().includes(q);
+
+      if (!matchesText) return false;
+
+      // FILTRO NUEVO: AGOTADOS / TODOS
+      if (stockFilter === 'agotados') {
+        return (p.qty || 0) <= 0;
+      }
+
+      return true; // "all"
     })
     .forEach(p => {
       const isZero = (p.qty || 0) <= 0;
@@ -359,6 +414,8 @@ function renderInventoryTable(filter = '') {
     });
   });
 }
+
+
 
 
 
@@ -1158,8 +1215,6 @@ function init() {
 }
 
 
-
-
 /* ---------- Ejecutar cuando el DOM esté listo ---------- */
 window.addEventListener('DOMContentLoaded', init);
 
@@ -1167,576 +1222,3 @@ window.addEventListener('DOMContentLoaded', init);
 // refresh on storage change (multitab)
   window.addEventListener('storage', () => renderAll());
 })();
-
-
-// ===========================================================
-// 🔒 LOGIN PROFESIONAL PARA ANÁLISIS (con botón Cancelar)
-// ===========================================================
-document.addEventListener("DOMContentLoaded", () => {
-  const PASSWORD = "admin123"; // 🔒 Cambia esta clave
-  let isAuthenticated = false;
-
-  // Escucha clics en las pestañas
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    if (btn.dataset.tab === "analysis") {
-      btn.addEventListener("click", e => {
-        if (!isAuthenticated) {
-          e.preventDefault();
-          showLoginModal();
-        }
-      });
-    }
-  });
-
-  // --- 💡 Modal login ---
-  function showLoginModal() {
-    if (document.querySelector(".login-overlay")) return;
-
-    const html = `
-      <div class="login-overlay">
-        <div class="login-modal animate-in">
-          <h2 class="login-title">🔒 Acceso restringido</h2>
-          <p class="login-desc">Introduce la contraseña para continuar:</p>
-          <input type="password" id="loginPassword" placeholder="Contraseña" class="login-input" autofocus />
-          <div class="login-actions">
-            <button id="loginConfirm" class="login-btn">Ingresar</button>
-            <button id="loginCancel" class="login-btn cancel">Cancelar</button>
-          </div>
-          <p id="loginError" class="login-error"></p>
-        </div>
-      </div>
-    `;
-
-    document.body.insertAdjacentHTML("beforeend", html);
-
-    const overlay = document.querySelector(".login-overlay");
-    const input = document.getElementById("loginPassword");
-    const confirm = document.getElementById("loginConfirm");
-    const cancel = document.getElementById("loginCancel");
-    const error = document.getElementById("loginError");
-
-    confirm.addEventListener("click", checkPassword);
-    cancel.addEventListener("click", goBackToInventory);
-    input.addEventListener("keypress", e => {
-      if (e.key === "Enter") checkPassword();
-    });
-
-    function checkPassword() {
-      if (input.value === PASSWORD) {
-        isAuthenticated = true;
-        overlay.classList.add("fade-out");
-        setTimeout(() => overlay.remove(), 300);
-        document.querySelector('.tab-btn[data-tab="analysis"]').click();
-      } else {
-        error.textContent = "Contraseña incorrecta ❌";
-        input.value = "";
-        input.focus();
-      }
-    }
-
-    function goBackToInventory() {
-      overlay.classList.add("fade-out");
-      setTimeout(() => overlay.remove(), 300);
-      document.querySelector('.tab-btn[data-tab="inventory"]').click();
-    }
-  }
-});
-
-
-
-/* ---------- Botón Refrescar Análisis ---------- */
-$('#refreshAnalysisBtn')?.addEventListener('click', () => {
-  try {
-    console.log("🔄 Refrescando análisis...");
-    renderBrandAnalysis();
-    renderStatsAndCharts();
-    console.log("✅ Análisis actualizado correctamente");
-  } catch (err) {
-    console.error("❌ Error al refrescar análisis:", err);
-    alert("Error al refrescar el análisis. Revisa la consola para más detalles.");
-  }
-});
-
-
-/* ===========================
-   MÓDULO CLIENTES (MEJORADO CON BUSCADOR Y ACCIONES)
-   =========================== */
-const LS_CLIENTS = 'clientsData';
-
-// Funciones de carga y guardado
-const loadClients = () => JSON.parse(localStorage.getItem(LS_CLIENTS) || '[]');
-const saveClients = (arr) => localStorage.setItem(LS_CLIENTS, JSON.stringify(arr));
-
-/* === Render tabla === */
-function renderClientsTable(filter = '') {
-  const tbody = document.querySelector('#clientsTable tbody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  const q = (filter || '').trim().toLowerCase();
-  const clients = loadClients();
-
-  if (!clients.length) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="7" style="text-align:center;opacity:.6;">Sin clientes registrados</td>`;
-    tbody.appendChild(tr);
-    return;
-  }
-
-  clients
-    .filter(c => {
-      if (!q) return true;
-      return (
-        (c.nombre || '').toLowerCase().includes(q) ||
-        (c.telefono || '').toLowerCase().includes(q) ||
-        (c.correo || '').toLowerCase().includes(q)
-      );
-    })
-    .forEach(c => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><input type="checkbox" class="client-check" data-id="${c.id}" /></td>
-        <td>${esc(c.nombre)}</td>
-        <td>${esc(c.telefono || '')}</td>
-        <td>${esc(c.correo || '')}</td>
-        <td>${c.fechaCumple || '-'}</td>
-        <td>${c.fechaRegistro ? new Date(c.fechaRegistro).toLocaleDateString() : '-'}</td>
-        <td>
-          <button class="btn ghost" data-id="${c.id}" data-action="edit-client">Editar</button>
-          <button class="btn ghost" data-id="${c.id}" data-action="delete-client">Eliminar</button>
-          <button class="btn ghost email-client" data-id="${c.id}">📧 Enviar correo</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-}
-
-/* === Listener para botón "Enviar correo" === */
-document.addEventListener('click', e => {
-  if (e.target.classList.contains('email-client')) {
-    const id = e.target.dataset.id;
-    const clientes = loadClients(); // ✅ ahora sí existe
-    const cliente = clientes.find(c => c.id === id);
-    if (!cliente) return alert('Cliente no encontrado');
-    sendClientEmailForm(cliente);
-  }
-});
-
-/* === Envío de correo con EmailJS === */
-function sendClientEmailForm(cliente) {
-  if (!cliente || !cliente.correo) {
-    return alert("⚠️ No se encontró un correo válido para este cliente.");
-  }
-
-  // ❌ Eliminamos el confirm interno (lo haremos fuera)
-  // if (!confirm(`¿Enviar correo a ${cliente.nombre}?`)) return;
-
-  // Crear formulario invisible
-  const form = document.createElement("form");
-  form.style.display = "none";
-
-  const data = {
-    to_name: cliente.nombre,
-    to_email: cliente.correo,
-    telefono: cliente.telefono || "No registrado",
-    fecha: new Date().toLocaleDateString("es-CO"),
-    year: new Date().getFullYear(),
-  };
-
-  for (const key in data) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = key;
-    input.value = data[key];
-    form.appendChild(input);
-  }
-
-  document.body.appendChild(form);
-
-  emailjs
-    .sendForm("service_klqo261", "template_rt5dymj", form)
-    .then(() =>
-      Swal.fire({
-        icon: "success",
-        title: "¡Correo enviado!",
-        text: `El mensaje fue enviado correctamente a ${cliente.nombre}.`,
-        showConfirmButton: false,
-        timer: 2500,
-        background: "#111",
-        color: "#fff",
-      })
-    )
-    .catch((err) => {
-      console.error("Error al enviar EmailJS:", err);
-      Swal.fire({
-        icon: "error",
-        title: "¡Error al enviar el correo!",
-        text: `No se pudo enviar el correo a ${cliente.nombre}.`,
-        showConfirmButton: false,
-        timer: 2500,
-        background: "#111",
-        color: "#fff",
-      });
-    })
-    .finally(() => form.remove());
-}
-
-
-
-
-
-
-/* === Modal === */
-(function createClientModalOnce() {
-  if (document.getElementById('clientModalOverlay')) return;
-
-  const html = `
-  <div id="clientModalOverlay" class="modal-overlay hidden" style="display:none;">
-    <div class="modal card" id="clientModal" style="max-width:420px;">
-      <button id="closeClientModal" class="modal-close">✕</button>
-      <h2 id="clientModalTitle">Nuevo Cliente</h2>
-      <form id="clientForm" class="form-grid">
-        <input id="c_id" type="hidden" />
-        <label>Nombre*<input id="c_nombre" required /></label>
-        <label>Teléfono<input id="c_telefono" /></label>
-        <label>Correo<input id="c_correo" type="email" /></label>
-        <label>Fecha de Cumpleaños<input id="c_fechaCumple" type="date" /></label>
-        <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
-          <button type="button" id="cancelClientModal" class="btn ghost">Cancelar</button>
-          <button type="submit" class="btn primary">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>`;
-  document.body.insertAdjacentHTML('beforeend', html);
-  document.getElementById('clientModalOverlay').style.display = '';
-
-  const clientForm = document.getElementById('clientForm');
-  if (!clientForm.__attached) {
-    clientForm.addEventListener('submit', e => {
-      e.preventDefault();
-      const editingId = document.getElementById('c_id').value || null;
-      const clients = loadClients();
-      const payload = {
-        id: editingId || cryptoId(),
-        nombre: document.getElementById('c_nombre').value.trim(),
-        telefono: document.getElementById('c_telefono').value.trim(),
-        correo: document.getElementById('c_correo').value.trim(),
-        fechaCumple: document.getElementById('c_fechaCumple').value || '',
-        fechaRegistro: editingId
-          ? clients.find(c => c.id === editingId)?.fechaRegistro || nowISO()
-          : nowISO()
-      };
-      if (editingId) {
-        const idx = clients.findIndex(c => c.id === editingId);
-        if (idx !== -1) clients[idx] = payload;
-      } else clients.push(payload);
-
-      saveClients(clients);
-      hide('#clientModalOverlay');
-      renderClientsTable(document.querySelector('#clientSearch')?.value || '');
-    });
-    clientForm.__attached = true;
-  }
-
-  document.getElementById('closeClientModal').onclick = () => hide('#clientModalOverlay');
-  document.getElementById('cancelClientModal').onclick = () => hide('#clientModalOverlay');
-  document.getElementById('clientModalOverlay').onclick = ev => {
-    if (ev.target.id === 'clientModalOverlay') hide('#clientModalOverlay');
-  };
-})();
-
-/* === Eventos Globales === */
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-
-  const id = btn.dataset.id;
-  const action = btn.dataset.action;
-
-  // Agregar
-  if (btn.id === 'addClientBtn') {
-    document.getElementById('clientForm').reset();
-    document.getElementById('c_id').value = '';
-    document.getElementById('clientModalTitle').textContent = 'Nuevo Cliente';
-    show('#clientModalOverlay');
-  }
-
-  // Editar
-  if (action === 'edit-client') {
-    const c = loadClients().find(x => x.id === id);
-    if (!c) return;
-    document.getElementById('clientModalTitle').textContent = 'Editar Cliente';
-    document.getElementById('c_id').value = c.id;
-    document.getElementById('c_nombre').value = c.nombre;
-    document.getElementById('c_telefono').value = c.telefono || '';
-    document.getElementById('c_correo').value = c.correo || '';
-    document.getElementById('c_fechaCumple').value = c.fechaCumple || '';
-    show('#clientModalOverlay');
-  }
-
-  // Eliminar individual
-  if (action === 'delete-client') {
-    if (!confirm('¿Eliminar cliente?')) return;
-    saveClients(loadClients().filter(x => x.id !== id));
-    renderClientsTable();
-  }
-
-  // Enviar correo
-  if (action === 'email-client') {
-    const c = loadClients().find(x => x.id === id);
-    if (c?.correo) {
-      window.location.href = `mailto:${c.correo}?subject=Hola ${encodeURIComponent(c.nombre)}`;
-    } else {
-      alert('Este cliente no tiene correo registrado.');
-    }
-  }
-
-  // Eliminar seleccionados
-  if (btn.id === 'deleteSelectedClients') {
-    const checks = [...document.querySelectorAll('.client-check:checked')];
-    if (!checks.length) return alert('Selecciona al menos un cliente.');
-    if (!confirm(`¿Eliminar ${checks.length} cliente(s)?`)) return;
-    const ids = checks.map(ch => ch.dataset.id);
-    saveClients(loadClients().filter(c => !ids.includes(c.id)));
-    renderClientsTable();
-  }
-
-  // Eliminar todos
-  if (btn.id === 'deleteAllClients') {
-    if (confirm('¿Eliminar TODOS los clientes?')) {
-      localStorage.removeItem(LS_CLIENTS);
-      renderClientsTable();
-    }
-  }
-});
-
-/* === Buscador === */
-document.addEventListener('input', e => {
-  if (e.target.id === 'clientSearch') renderClientsTable(e.target.value);
-});
-
-/* === Render al abrir pestaña === */
-$$('.tab-btn').forEach(btn =>
-  btn.addEventListener('click', () => {
-    if (btn.dataset.tab === 'clients') setTimeout(() => renderClientsTable(), 50);
-  })
-);
-
-
-
-/* ===========================
-   KPIs de Clientes (Live Auto Update) — Preciso con fecha bonita
-   =========================== */
-
-/* ===========================
-   KPIs de Clientes (flechas + fecha exacta sin desfase)
-   =========================== */
-
-let currentCumpleIndex = 0; // Persistencia entre renderizados
-
-function renderClientKPIs() {
-  const container = document.getElementById('clientStats');
-  if (!container) return;
-
-  const clients = loadClients();
-  const total = clients.length;
-
-  // 📅 Hoy a medianoche (hora local, sin desfases)
-  const hoy = new Date();
-  const hoyLocal = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-
-  // Función robusta para parsear fechas en local
-  const parseFechaLocal = (str) => {
-    if (!str) return null;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-      const [y, m, d] = str.split('-').map(Number);
-      return new Date(y, m - 1, d);
-    }
-    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
-      const [d, m, y] = str.split('/').map(Number);
-      return new Date(y, m - 1, d);
-    }
-    const parsed = new Date(str);
-    if (!isNaN(parsed)) return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-    return null;
-  };
-
-  // 📅 Construir lista de próximos cumpleaños
-  const proximos = clients
-    .map(c => {
-      const cumple = parseFechaLocal(c.fechaCumple);
-      if (!cumple) return null;
-
-      let cumpleEsteAño = new Date(hoyLocal.getFullYear(), cumple.getMonth(), cumple.getDate());
-      let diffDias = Math.floor((cumpleEsteAño - hoyLocal) / 86400000);
-
-      // Si ya pasó este año, mover al siguiente
-      if (diffDias < 0) {
-        cumpleEsteAño = new Date(hoyLocal.getFullYear() + 1, cumple.getMonth(), cumple.getDate());
-        diffDias = Math.floor((cumpleEsteAño - hoyLocal) / 86400000);
-      }
-
-      return {
-        id: c.id,
-        nombre: c.nombre,
-        correo: c.correo,
-        telefono: c.telefono,
-        fecha: cumpleEsteAño,
-        dias: diffDias
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.dias - b.dias);
-
-  if (currentCumpleIndex >= proximos.length) currentCumpleIndex = 0;
-
-  // 💬 Mostrar cumpleaños actual
-  let proximoHTML = '—';
-  if (proximos.length) {
-    const cliente = proximos[currentCumpleIndex];
-    const fechaBonita = cliente.fecha.toLocaleDateString('es-CO', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-
-    let texto;
-    if (cliente.dias === 0) texto = `🎉 ${cliente.nombre} (${fechaBonita} — ¡Hoy!)`;
-    else if (cliente.dias === 1) texto = `${cliente.nombre} (${fechaBonita} — en 1 día)`;
-    else texto = `${cliente.nombre} (${fechaBonita} — en ${cliente.dias} días)`;
-
-    // 📨 Agregamos botón de enviar correo aquí 👇
-    const botonCorreo = cliente.correo
-      ? `<button class="btn ghost email-client" data-id="${cliente.id}" style="margin-top:6px;">📧 Enviar correo</button>`
-      : `<p style="opacity:.6;margin-top:6px;">(Sin correo registrado)</p>`;
-
-    proximoHTML = `
-      <div class="cumple-navegador" style="flex-direction:column;gap:6px;">
-        <div style="display:flex;align-items:center;justify-content:center;gap:0.5em;">
-          <button class="nav-btn" id="prevCumple" ${currentCumpleIndex === 0 ? 'disabled' : ''}>⬅️</button>
-          <span>${texto}</span>
-          <button class="nav-btn" id="nextCumple" ${currentCumpleIndex === proximos.length - 1 ? 'disabled' : ''}>➡️</button>
-        </div>
-        ${botonCorreo}
-      </div>
-    `;
-  }
-
-  // 🎂 Cumpleaños este mes
-  const mesActual = hoyLocal.getMonth();
-  const cumpleMes = clients.filter(c => {
-    const f = parseFechaLocal(c.fechaCumple);
-    return f && f.getMonth() === mesActual;
-  }).length;
-
-  // 🧩 Renderizar KPIs
-  container.innerHTML = `
-    <div class="kpi-card">
-      <h3>Total de clientes</h3>
-      <p>${total}</p>
-    </div>
-    <div class="kpi-card">
-      <h3>Próximo cumpleaños</h3>
-      <div id="proximoCumpleContainer">${proximoHTML}</div>
-    </div>
-    <div class="kpi-card">
-      <h3>Cumpleaños este mes</h3>
-      <p>${cumpleMes}</p>
-    </div>
-  `;
-
-  // 🧭 Conectar botones navegación
-  const prevBtn = document.getElementById('prevCumple');
-  const nextBtn = document.getElementById('nextCumple');
-
-  if (prevBtn) prevBtn.onclick = () => {
-    if (currentCumpleIndex > 0) {
-      currentCumpleIndex--;
-      renderClientKPIs();
-    }
-  };
-
-  if (nextBtn) nextBtn.onclick = () => {
-    if (currentCumpleIndex < proximos.length - 1) {
-      currentCumpleIndex++;
-      renderClientKPIs();
-    }
-  };
-
-  // ✉️ Conectar botón de enviar correo (reutiliza tu función existente)
-  const emailBtn = container.querySelector('.email-client');
-  if (emailBtn) {
-  emailBtn.addEventListener(
-    "click",
-    (e) => {
-      e.stopPropagation();
-      const id = emailBtn.dataset.id;
-      const cliente = clients.find((c) => c.id === id);
-
-      if (!cliente) {
-        return alert("Cliente no encontrado");
-      }
-
-      // ✅ Solo una confirmación aquí
-      if (confirm(`¿Enviar correo a ${cliente.nombre}?`)) {
-        sendClientEmailForm(cliente);
-      }
-    },
-    { once: true } // previene listeners duplicados al re-renderizar
-  );
-}
-
-
-}
-
-
-
-
-
-/* ===========================
-   Refresco unificado
-   =========================== */
-function refreshClientsUI() {
-  renderClientsTable();
-  renderClientKPIs();
-}
-
-/* ===========================
-   Hook universal (garantiza reactividad)
-   =========================== */
-
-// Guarda referencia original
-const __originalSaveClients = window.saveClients;
-
-// Sobrescribe saveClients para refrescar automáticamente
-window.saveClients = function (arr) {
-  __originalSaveClients(arr);
-  refreshClientsUI(); // 🔁 actualiza inmediatamente sin evento
-};
-
-// Cada vez que el modal guarda, edita o borra, también refresca
-document.addEventListener('click', (e) => {
-  if (e.target.matches('#addClientBtn, [data-action="edit-client"], [data-action="delete-client"]')) {
-    // Damos un pequeño retardo por si el modal aún no cierra
-    setTimeout(() => refreshClientsUI(), 120);
-  }
-});
-
-// También al cambiar de pestaña "Clientes"
-$$('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (btn.dataset.tab === 'clients') {
-      setTimeout(() => refreshClientsUI(), 100);
-    }
-  });
-});
-
-// Render inicial
-if (document.querySelector('#clients') && !document.querySelector('#clients').classList.contains('hidden')) {
-  refreshClientsUI();
-}
-
-
-
