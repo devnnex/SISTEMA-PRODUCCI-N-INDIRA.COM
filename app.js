@@ -598,7 +598,22 @@ function renderSalesTable(filter = '') {
           </span>
         </td>
         <td>${descripcion}</td>
-        <td>${m.qty}</td>
+        <td>
+          <span style="
+            background:${bg};
+            color:${color};
+            width:28px;
+            height:28px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:50%;
+            font-weight:700;
+            font-size:13px;
+          ">
+            ${m.qty}
+          </span>
+        </td>
         <td>${formatPrettyDate(m.timestamp)}</td>
       `;
 
@@ -1320,4 +1335,5 @@ window.addEventListener('DOMContentLoaded', init);
 // refresh on storage change (multitab)
   window.addEventListener('storage', () => renderAll());
 })();
+
 
