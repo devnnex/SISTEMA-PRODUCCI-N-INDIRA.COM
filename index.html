@@ -360,7 +360,7 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
     <div class="card table-card" id="salesTableWrapper">
       <table id="salesTable">
         <thead>
-          <tr><th></th><th>Producto</th><th>Cantidad</th><th>Fecha</th></tr>
+          <tr><th>Producto</th><th>Acción</th><th>Detalles</th><th>Cantidad</th><th>Fecha</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -561,7 +561,9 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
 
 
 
-<footer style="text-align:center; padding:10px; color:#aaa;">© 2025 Vikingos Indira Group</footer>
+<footer style="text-align:center; padding:10px; color:#aaa;">
+  © <span id="yearFooter"></span> Vikingos Indira Group
+</footer>
 
 
 
@@ -571,10 +573,10 @@ body { background: var(--bg-dark); color: var(--text-light); min-height:100vh; }
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>Swal.fire({
   icon: 'success',
-  title: '¡Exito!',
+  title: '¡Nueva Actualización!',
   html: `
     <span style="font-size:15px;">
-      Informacion cargada correctamente
+      Movimientos ahora permite ver las veces que agregastes tambien, incluye colores distintivos y filtro de busqueda, feliz dia <3 
     </span>
   `,
   background: '#1e1e1e',
