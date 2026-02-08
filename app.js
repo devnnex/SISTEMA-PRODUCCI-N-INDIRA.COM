@@ -1,8 +1,17 @@
 /* app.js - Dashboard Inventario & Ventas (completo) v2.3.0 2025-15-11 
 */
 
+//Fecha actual en el footer
+document.getElementById('yearFooter').textContent = new Date().getFullYear();
+
+
 const LS_PRODUCTS = 'inventory_products';
 const LS_SALES = 'inventory_sales';
+
+const LS_MOVEMENTS = 'inventory_movements';
+
+const loadMovements = () => JSON.parse(localStorage.getItem(LS_MOVEMENTS) || '[]');
+const saveMovements = arr => localStorage.setItem(LS_MOVEMENTS, JSON.stringify(arr));
 
 /* ---------- Util ---------- */
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -120,6 +129,22 @@ function ensureUiExtras() {
         }
 
         saveProducts(products);
+
+
+        const movements = loadMovements();
+
+movements.unshift({
+  id: cryptoId(),
+  productId: product.id,
+  name: product.name,
+  type: editingId ? 'MODIFICACION' : 'INGRESO',
+  qty: product.qty,
+  timestamp: nowISO()
+});
+
+saveMovements(movements);
+
+
         hide('#modalOverlay');
         renderAll();
       });
@@ -252,6 +277,19 @@ if (sellForm && !sellForm.__listenersAttached) {
       timestamp: nowISO()
     });
     saveSales(sales);
+
+    const movements = loadMovements();
+
+movements.unshift({
+  id: cryptoId(),
+  productId: prod.id,
+  name: prod.name,
+  type: 'SALIDA',
+  qty: qty,
+  timestamp: nowISO()
+});
+
+saveMovements(movements);
 
     hide('#sellOverlay');
     renderAll();
@@ -456,9 +494,21 @@ $('#confirmAddStockBtn').onclick = () => {
   if (!p) return;
 
   p.qty = (p.qty || 0) + qtyToAdd;
-
   saveProducts(products);
-  renderInventoryTable();
+
+  const movements = loadMovements();
+
+movements.unshift({
+  id: cryptoId(),
+  productId: p.id,
+  name: p.name,
+  type: 'ENTRADA',
+  qty: qtyToAdd,
+  timestamp: nowISO()
+});
+
+saveMovements(movements);
+renderInventoryTable();
 
   $('#addStockOverlay').classList.add('hidden');
   setTimeout(() => $('#addStockOverlay').style.display = 'none', 200);
@@ -493,28 +543,137 @@ function formatPrettyDate(isoString) {
 
 /* ---------- Sales rendering ---------- */
 function renderSalesTable(filter = '') {
+  const table = $('#salesTable');
   const tbody = $('#salesTable tbody');
-  if (!tbody) return;
+  if (!tbody || !table) return;
+
+  /* ==================================================
+     CREAR FILTRO SI NO EXISTE
+  ================================================== */
+  if (!$('#movementTypeFilter')) {
+    const wrapper = document.createElement('div');
+    wrapper.style.margin = '10px 0';
+
+    wrapper.innerHTML = `
+      <label style="font-weight:600;margin-right:8px;">Filtrar:</label>
+      <select id="movementTypeFilter"
+        style="
+          padding:6px 36px 6px 12px;
+          border-radius:8px;
+          border:1px solid #ccc;
+          background:#111827;
+          color:white;
+          font-weight:600;
+          appearance:none;
+          background-image:url('data:image/svg+xml;utf8,<svg fill="white" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+          background-repeat:no-repeat;
+          background-position:right 10px center;
+          background-size:16px;
+        ">
+        <option value="">TODOS</option>
+        <option value="ENTRADA">ENTRADAS</option>
+        <option value="SALIDA">SALIDAS</option>
+        <option value="MODIFICACION">MODIFICACIONES</option>
+      </select>
+    `;
+
+    table.parentNode.insertBefore(wrapper, table);
+
+    $('#movementTypeFilter').addEventListener('change', () => {
+      renderSalesTable($('#searchSales')?.value || '');
+    });
+  }
+
+  /* ==================================================
+     FILTRADO
+  ================================================== */
   tbody.innerHTML = '';
   const q = (filter || '').trim().toLowerCase();
-  const sales = loadSales();
+  const typeFilter = $('#movementTypeFilter')?.value || '';
 
-  sales
-    .filter(s => {
-      if (!q) return true;
-      return (s.name || '').toLowerCase().includes(q) || (s.brand || '').toLowerCase().includes(q) || (s.method1 || '').toLowerCase().includes(q);
+  const movements = loadMovements();
+
+  movements
+    .filter(m => {
+      const matchSearch =
+        !q ||
+        (m.name || '').toLowerCase().includes(q) ||
+        (m.type || '').toLowerCase().includes(q);
+
+      const matchType =
+        !typeFilter || m.type === typeFilter;
+
+      return matchSearch && matchType;
     })
-    .forEach(s => {
+    .forEach(m => {
+
+      let bg = '#ffffff';
+      let color = '#000';
+
+      if (m.type === 'SALIDA') {
+        bg = '#e53935';
+        color = '#ffffff';
+      }
+      else if (m.type === 'ENTRADA') {
+        bg = '#2e7d32';
+        color = '#ffffff';
+      }
+      else if (m.type === 'MODIFICACION') {
+        bg = '#fbc02d';
+        color = '#000000';
+      }
+
+      const descripcion =
+        m.type === 'SALIDA' ? 'Salida de Stock' :
+        m.type === 'ENTRADA' ? 'Ingreso de stock' :
+        m.type === 'MODIFICACION' ? 'Edición manual' :
+        'Movimiento';
+
       const tr = document.createElement('tr');
+
       tr.innerHTML = `
-  <td><input type="checkbox" class="sale-select" data-id="${s.id}"></td>
-  <td>${esc(s.name)}</td>
-  <td>${s.qty}</td>
-  <td>${formatPrettyDate(s.timestamp)}</td>
-`;
-  tbody.appendChild(tr);
-  });
+        <td>${esc(m.name)}</td>
+        <td>
+          <span style="
+            background:${bg};
+            color:${color};
+            padding:4px 10px;
+            border-radius:10px;
+            font-weight:600;
+            display:inline-block;
+          ">
+            ${m.type}
+          </span>
+        </td>
+        <td>${descripcion}</td>
+        <td>
+          <span style="
+            background:${bg};
+            color:${color};
+            width:28px;
+            height:28px;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:50%;
+            font-weight:700;
+          ">
+            ${m.qty}
+          </span>
+        </td>
+        <td>${formatPrettyDate(m.timestamp)}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
 }
+
+
+
+ 
+
+
+
 
 /* ---------- Sold table: only products fully sold (qty === 0 && sold > 0) ---------- */
 function renderSoldTable() {
@@ -1146,6 +1305,7 @@ function renderAll() {
 
   renderInventoryTable($('#searchInventory')?.value || '');
   renderSalesTable($('#searchSales')?.value || '');
+  
   renderSoldTable();
   renderBrandAnalysis();
   renderStatsAndCharts();
