@@ -543,67 +543,19 @@ function formatPrettyDate(isoString) {
 
 /* ---------- Sales rendering ---------- */
 function renderSalesTable(filter = '') {
-  const table = $('#salesTable');
   const tbody = $('#salesTable tbody');
-  if (!tbody || !table) return;
+  if (!tbody) return;
 
-  /* ==================================================
-     CREAR FILTRO SI NO EXISTE
-  ================================================== */
-  if (!$('#movementTypeFilter')) {
-    const wrapper = document.createElement('div');
-    wrapper.style.margin = '10px 0';
-
-    wrapper.innerHTML = `
-      <label style="font-weight:600;margin-right:8px;">Filtrar:</label>
-      <select id="movementTypeFilter"
-        style="
-          padding:6px 36px 6px 12px;
-          border-radius:8px;
-          border:1px solid #ccc;
-          background:#111827;
-          color:white;
-          font-weight:600;
-          appearance:none;
-          background-image:url('data:image/svg+xml;utf8,<svg fill="white" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
-          background-repeat:no-repeat;
-          background-position:right 10px center;
-          background-size:16px;
-        ">
-        <option value="">TODOS</option>
-        <option value="ENTRADA">ENTRADAS</option>
-        <option value="SALIDA">SALIDAS</option>
-        <option value="MODIFICACION">MODIFICACIONES</option>
-      </select>
-    `;
-
-    table.parentNode.insertBefore(wrapper, table);
-
-    $('#movementTypeFilter').addEventListener('change', () => {
-      renderSalesTable($('#searchSales')?.value || '');
-    });
-  }
-
-  /* ==================================================
-     FILTRADO
-  ================================================== */
   tbody.innerHTML = '';
   const q = (filter || '').trim().toLowerCase();
-  const typeFilter = $('#movementTypeFilter')?.value || '';
 
   const movements = loadMovements();
 
   movements
     .filter(m => {
-      const matchSearch =
-        !q ||
-        (m.name || '').toLowerCase().includes(q) ||
-        (m.type || '').toLowerCase().includes(q);
-
-      const matchType =
-        !typeFilter || m.type === typeFilter;
-
-      return matchSearch && matchType;
+      if (!q) return true;
+      return (m.name || '').toLowerCase().includes(q) ||
+             (m.type || '').toLowerCase().includes(q);
     })
     .forEach(m => {
 
@@ -646,21 +598,7 @@ function renderSalesTable(filter = '') {
           </span>
         </td>
         <td>${descripcion}</td>
-        <td>
-          <span style="
-            background:${bg};
-            color:${color};
-            width:28px;
-            height:28px;
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            border-radius:50%;
-            font-weight:700;
-          ">
-            ${m.qty}
-          </span>
-        </td>
+        <td>${m.qty}</td>
         <td>${formatPrettyDate(m.timestamp)}</td>
       `;
 
@@ -1382,3 +1320,4 @@ window.addEventListener('DOMContentLoaded', init);
 // refresh on storage change (multitab)
   window.addEventListener('storage', () => renderAll());
 })();
+
