@@ -324,7 +324,27 @@ function renderInventoryTable(filter = '', stockFilter = 'all') {
   const tbody = $('#inventoryTable tbody');
   if (!tbody) return;
 
-  // ====== INSERTAR FILTRO SI NO EXISTE ======
+  const table = document.getElementById('inventoryTable');
+
+  // ==================================================
+  // KPI CONTAINER (SI NO EXISTE)
+  // ==================================================
+  let kpiContainer = document.getElementById('inventory-kpis');
+  if (!kpiContainer) {
+    kpiContainer = document.createElement('div');
+    kpiContainer.id = 'inventory-kpis';
+    kpiContainer.style = `
+      display:flex;
+      gap:16px;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    `;
+    table.parentNode.insertBefore(kpiContainer, table);
+  }
+
+  // ==================================================
+  // INSERTAR FILTRO SI NO EXISTE
+  // ==================================================
   let filterContainer = document.getElementById('stock-filter-container');
   if (!filterContainer) {
     filterContainer = document.createElement('div');
@@ -334,7 +354,7 @@ function renderInventoryTable(filter = '', stockFilter = 'all') {
       display:flex;
       gap:10px;
       align-items:center;
-      background: #24c4a3;         /* Rosado suave */
+      background: #24c4a3;
       padding: 8px 12px;
       border-radius: 8px;
     `;
@@ -345,9 +365,9 @@ function renderInventoryTable(filter = '', stockFilter = 'all') {
         style="
           padding:6px 10px; 
           border-radius:6px;
-          background:#ffb9d8;   /* Rosado */
+          background:#ffb9d8;
           border:1px solid #e898b9;
-          color:#000;           /* Letra negra */
+          color:#000;
           font-weight:600;
         ">
         <option value="all">Todos</option>
@@ -355,10 +375,8 @@ function renderInventoryTable(filter = '', stockFilter = 'all') {
       </select>
     `;
 
-    const table = document.getElementById('inventoryTable');
     table.parentNode.insertBefore(filterContainer, table);
 
-    // Evento del filtro
     document.getElementById('stockFilter').addEventListener('change', e => {
       renderInventoryTable(filter, e.target.value);
     });
@@ -372,9 +390,28 @@ function renderInventoryTable(filter = '', stockFilter = 'all') {
   const q = (filter || '').trim().toLowerCase();
   const products = loadProducts();
 
+  // ==================================================
+  // CALCULAR KPIs GENERALES
+  // ==================================================
+  let totalStock = 0;
+  let totalSold = 0;
+
+  products.forEach(p => {
+    totalStock += Number(p.qty || 0);
+    totalSold += Number(p.sold || 0);
+  });
+
+  kpiContainer.innerHTML = `
+    <div style="background:#111827;padding:12px 18px;border-radius:12px;color:#fff;font-weight:600;">
+      Stock Total: ${totalStock}
+    </div>
+    <div style="background:#1f2937;padding:12px 18px;border-radius:12px;color:#fff;font-weight:600;">
+      Salidas Totales: ${totalSold}
+    </div>
+  `;
+
   products
     .filter(p => {
-      // FILTRO DE TEXTO (YA EXISTENTE)
       const matchesText =
         !q ||
         (p.name || '').toLowerCase().includes(q) ||
@@ -383,12 +420,11 @@ function renderInventoryTable(filter = '', stockFilter = 'all') {
 
       if (!matchesText) return false;
 
-      // FILTRO NUEVO: AGOTADOS / TODOS
       if (stockFilter === 'agotados') {
         return (p.qty || 0) <= 0;
       }
 
-      return true; // "all"
+      return true;
     })
     .forEach(p => {
       const isZero = (p.qty || 0) <= 0;
@@ -403,7 +439,6 @@ function renderInventoryTable(filter = '', stockFilter = 'all') {
           ${isZero ? 'AGOTADO' : p.qty}
         </td>
 
-        <!-- Editable sold column -->
         <td>
           <input 
             type="number" 
@@ -428,9 +463,6 @@ function renderInventoryTable(filter = '', stockFilter = 'all') {
 
   updateSelectedCount();
 
-  // ===============================
-  // GUARDAR CAMBIOS MANUALES DE SOLD
-  // ===============================
   $$('.sold-edit').forEach(input => {
     input.addEventListener("change", e => {
       const id = e.target.dataset.id;
@@ -446,9 +478,10 @@ function renderInventoryTable(filter = '', stockFilter = 'all') {
       const p = products.find(x => x.id === id);
       if (!p) return;
 
-      p.sold = newValue; // ← Guardamos manualmente, incluyendo 0
+      p.sold = newValue;
 
       saveProducts(products);
+      renderInventoryTable(); // refresca KPI en tiempo real
     });
   });
 }
@@ -1335,6 +1368,7 @@ window.addEventListener('DOMContentLoaded', init);
 // refresh on storage change (multitab)
   window.addEventListener('storage', () => renderAll());
 })();
+
 
 
 
